@@ -23,10 +23,11 @@ capmetro = read_csv('/Users/josephherrera/desktop/ECO395M/data/capmetro_UT.csv')
 # Data Mining Assignment 2
 
 ### Question 1: Data Visualization
-One panel of line graphs that plots average boardings grouped by hour of the day, day of week, and month. You should facet by day of week. Each facet should include three lines, one for each month, colored differently and with colors labeled with a legend. 
+
+1A. One panel of line graphs that plots average boardings grouped by hour of the day, day of week, and month. You should facet by day of week. Each facet should include three lines, one for each month, colored differently and with colors labeled with a legend. 
 
 Give the figure an informative caption in which you explain what is shown in the figure and address the following questions, citing evidence from the figure. Does the hour of peak boardings change from day to day, or is it broadly similar across days? Why do you think average boardings on Mondays in September look lower, compared to other days and months? Similarly, why do you think average boardings on Weds/Thurs/Fri in November look lower?
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Generate a variable calculating the average boardings group
 capmetro_timestamp = capmetro %>%
   mutate(day_of_week = factor(day_of_week,
@@ -55,12 +56,25 @@ ggplot(data = capmetro_facet) +
   ylab("Average Boarding") +
   theme_bw()
 ```
+Caption: The above facet plots depict the average number of passengers on Capmetro buses at UT by the hour of the day, day of the week, and relevant month of the year.
 
-One panel of scatter plots showing boardings (y) vs. temperature (x) in each 15-minute window, faceted by hour of the day, and with points colored in according to whether it is a weekday or weekend. 
+Does the hour of peak boardings change from day to day, or is it broadly similar across days?
+During peak hours of the day bus boardings are very similar during the week. Average boarding significantly decreases during the weekend since UT students do not have class. 
+
+Why do you think average boardings on Mondays in September look lower, compared to other days and months?
+Compared to other weekdays and months, the average student bus boarding are smaller. This is because of Labor Day, which UT students have off from class. The main reason why students board the bus to campus is to attend class, if you average in Labor Day with the other Monday's in September, the average number of boardings will decrease significantly.
+
+Why do you think average boardings on Weds/Thurs/Fri in November look lower? The average boardings on Wed/Thurs/Fri are also lower because of a holiday break. Typically, UT students recieve Weds/Thurs/Fri off during the week of Thanksgiving.
+
+
+
+
+\newpage
+1B. One panel of scatter plots showing boardings (y) vs. temperature (x) in each 15-minute window, faceted by hour of the day, and with points colored in according to whether it is a weekday or weekend. 
 
 Give the figure an informative caption in which you explain what is shown in the figure and answer the following question, citing evidence from the figure. When we hold hour of day and weekend status constant, does temperature seem to have a noticeable effect on the number of UT students riding the bus?
 
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 capmetro_scatter = capmetro %>%
   mutate(day_of_week = factor(day_of_week,
                  levels=c("Mon", "Tue", "Wed","Thu", "Fri", "Sat", "Sun")),
@@ -73,13 +87,19 @@ ggplot(data = capmetro_scatter) +
   geom_point(aes(x=temperature, y=boarding, color = weekend)) +
   facet_wrap(~ hour_of_day)
 ```
+Caption: The facet plots aboce show the temperature's effect on average bus boarding for capmetro at UT for each hour of the day and weekday versus weekend.
 
+When we hold hour of day and weekend status constant, does temperature seem to have a noticeable effect on the number of UT students riding the bus?
+
+The facted plots above illustrate that temperature does not have a noticable effect on the number of UT students riding the bus when holding hour of the day and weekend status constant. There seem to be a couple of outliers on the 16th hour of a weekday (4 pm) around 60 degrees farenehit, but these observations seem insignificant.
+
+\newpage
 ## Question 2: Saratoga Housing Prices
 
-Return to the data set on house prices in Saratoga, NY that we considered in class. Recall that a starter script here is in saratoga_lm.R. For this data set, you'll run a "horse race" (i.e. a model comparison exercise) between two model classes: linear models and KNN.
+2A. Return to the data set on house prices in Saratoga, NY that we considered in class. Recall that a starter script here is in saratoga_lm.R. For this data set, you'll run a "horse race" (i.e. a model comparison exercise) between two model classes: linear models and KNN.
 
 Build the best linear model for price that you can. It should clearly outperform the "medium" model that we considered in class. Use any combination of transformations, engineering features, polynomial terms, and interactions that you want; and use any strategy for selecting the model that you want.
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 #Load Saratoga houses data
 data(SaratogaHouses)
 
@@ -89,31 +109,7 @@ saratoga_split = initial_split(SaratogaHouses, prop = 0.8)
 saratoga_train = training(saratoga_split)
 saratoga_test = testing(saratoga_split)
 	
-# Fit to the training data
-# Sometimes it's easier to name the variables we want to leave out
-# The command below yields exactly the same model.
-# the dot (.) means "all variables not named"
-# the minus (-) means "exclude this variable"
-lm1 = lm(price ~ lotSize + bedrooms + bathrooms, data=saratoga_train)
-lm2 = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=saratoga_train)
-lm3 = lm(price ~ (. - pctCollege - sewer - waterfront - landValue - newConstruction)^2, data=saratoga_train)
-
-# Predictions out of sample
-# Root mean squared error
-rmse(lm1, saratoga_test)
-rmse(lm2, saratoga_test)
-rmse(lm3, saratoga_test)
-
-```
-
-```{r echo=FALSE, warning=FALSE}
-#Add additional variables to the best linear model (BLM)
-SaratogaHouses = SaratogaHouses %>%
-  mutate(livingArea_rooms = livingArea*rooms,
-         livingArea_bathrooms = livingArea*bathrooms,
-         livingArea_fireplaces = livingArea*fireplaces)
-        # log_age = log(age)) #cannot use log_age because some observation have age = 0
-
+# Fit the medium model to the training data
 saratoga_split_lm = initial_split(SaratogaHouses, prop = 0.8)
 saratoga_train_lm = training(saratoga_split_lm)
 saratoga_test_lm = testing(saratoga_split_lm)
@@ -128,6 +124,22 @@ saratoga_test_lm = testing(saratoga_split_lm)
 }
 rmse_out_lm_mean = mean(rmse_out_lm)
 rmse_out_lm_mean
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+#Standardize the variables
+SaratogaHouses = SaratogaHouses %>%
+   mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
+
+
+#Add additional variables to the best linear model (BLM)
+SaratogaHouses = SaratogaHouses %>%
+  mutate(livingArea_rooms = livingArea*rooms,
+         livingArea_bathrooms = livingArea*bathrooms,
+         livingArea_fireplaces = livingArea*fireplaces)
+        # log_age = log(age)) #cannot use log_age because some observation have age = 0
+
 
 #Create the best linear model for price
 #Add additional variables to the best linear model (BLM)
@@ -144,12 +156,8 @@ saratoga_test_blm = testing(saratoga_split_blm)
       this_rmse_blm = modelr::rmse(blm_model, saratoga_test_blm)
   }
 
-
-
 rmse_out_blm_mean = mean(rmse_out_blm)
 rmse_out_blm_mean
-
-
 
 ###### Test linear model
 SaratogaHouses = SaratogaHouses %>%
@@ -165,11 +173,20 @@ modelr::rmse(test_model, saratoga_test_blm)
  #RMSE first try 58693.66
 ```
 
-
-Now build the best K-nearest-neighbor regression model for price that you can. Note: you still need to choose which features should go into a KNN model, but you don't explicitly include interactions or polynomial terms. The method is sufficiently adaptable to find interactions and nonlinearities, if they are there. But do make sure to standardize your variables before applying KNN, or at least do something that accounts for the large differences in scale across the different variables here.
+\newpage
+2B. Now build the best K-nearest-neighbor regression model for price that you can. Note: you still need to choose which features should go into a KNN model, but you don't explicitly include interactions or polynomial terms. The method is sufficiently adaptable to find interactions and nonlinearities, if they are there. But do make sure to standardize your variables before applying KNN, or at least do something that accounts for the large differences in scale across the different variables here.
 
 Which model seems to do better at achieving lower out-of-sample mean-squared error? Write a report on your findings as if you were describing your price-modeling strategies for a local taxing authority, who needs to form predicted market values for properties in order to know how much to tax them. Keep the main focus on the conclusions and model performance; any relevant technical details should be put in an appendix.
-```{r}
+```{r echo=FALSE,warning=FALSE, message=FALSE}
+#Create the best KNN model for price -> compare to lm from Saratoga lm
+#Standardize variables excepet Class
+SaratogaHouses_scale = SaratogaHouses #%>%
+ #  mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
+
+SaratogaHouses_scale <- SaratogaHouses_scale[c(-17,-18,-19)] # drop interactions for this portion
+
+
+
 saratoga_split_scale = initial_split(SaratogaHouses_scale, prop = 0.8)
 saratoga_train_scale = training(saratoga_split_scale)
 saratoga_test_scale = testing(saratoga_split_scale)
@@ -189,19 +206,8 @@ rmse_out_scale_mean
 #0.6775124		
 ```
 
-```{r echo=FALSE}
-#Create the best KNN model for price -> compare to lm from Saratoga lm
-#Standardize variables excepet Class
-SaratogaHouses_scale = SaratogaHouses %>%
-   mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
 
-SaratogaHouses_scale <- SaratogaHouses_scale[c(-17,-18,-19)] # drop interactions for this portion
-
-
-
-```
-
-```{r}
+```{r echo=FALSE, message = FALSE, warning=FALSE}
 #Use KNN cross validation for various samples
 # K-fold cross validation
 K_folds = 20
@@ -234,7 +240,7 @@ labs(y="RMSE", title="RMSE vs k for KNN regression: Housing Prices")
 
 
 ```
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 # fit at optimal k to show predicts on full data set
 k_best = k_grid[which.min(cv_grid$err)]
 knn_best = knnreg(price ~ lotSize + age + landValue + livingArea + pctCollege + bedrooms + bathrooms + fireplaces + rooms + heating + fuel + sewer + waterfront + newConstruction + centralAir, k=k_best, data = SaratogaHouses_scale)
@@ -245,7 +251,7 @@ mutate(price_pred = predict(knn_best, SaratogaHouses_scale))
 
 ```
 
-
+\newpage
 ### Question 3 
 Consider the data in german_credit.csv on loan defaults from a German bank. The outcome variable of interest in this data set is default: a 0/1 indicator for whether a loan fell into default at some point before it was paid back to the bank. All other variables are features of the loan or borrower that might, in principle, help the bank predict whether a borrower is likely to default on a loan.
 
@@ -255,18 +261,15 @@ Of particular interest here is the "credit history" variable (history), in which
 
 What do you notice about the history variable vis-a-vis predicting defaults? What do you think is going on here? In light of what you see here, do you think this data set is appropriate for building a predictive model of defaults, if the purpose of the model is to screen prospective borrowers to classify them into "high" versus "low" probability of default? Why or why not---and if not, would you recommend any changes to the bank's sampling scheme?
 
-```{r echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 german_credit = read_csv('/Users/josephherrera/Desktop/ECO395M/data/german_credit.csv')
 
 # Find the default proability for each class of credit history
 # Dont include the row, column, or chi-squared proportions in the table
-gc_prob <- CrossTable(german_credit$Default, german_credit$history, digits = 3, prop.r = F, prop.c = F, prop.chisq = F, prop.t = T)
+#gc_prob <- CrossTable(german_credit$Default, german_credit$history, digits = 3, prop.r = F, prop.c = F, prop.chisq = F, prop.t = T)
 
-gc_prob
+#gc_prob
 
-
-
-table(german_credit)
 # Creating a variable that contains only the default probability
 #data_relationship <- gc_prob$prop.tbl 
 # Plotting it
@@ -285,8 +288,10 @@ ggplot(history_bar) +
 
 
 ```
+Caption: The bar plot illustrates the probability of an individual defaulting on a loan based on their credit history. This is particularly interesting because individuals with good credit history are more likely to default on a loan than people from other credit history categories.
 
-```{r}
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Create logisitic regression with default as the outcome variable
 # Create the initial train and test splits
 default_split = initial_split(german_credit, prop = 0.8)
@@ -296,7 +301,7 @@ default_test = testing(default_split)
 # Fit a logistic model to the training data and look at  the coefficients
 log_default <- glm(Default ~ duration + amount + installment + age + history + purpose + foreign, family = 'binomial', data = default_train)
 
-coef(log_default) %>% round(digits = 2)
+#coef(log_default) %>% round(digits = 2)
 
 #Add predictions to the training model and compare it to the actual data
 phat_train_default1 = predict(log_default, default_train)
@@ -314,7 +319,7 @@ sum(diag(confusion_in))/sum(confusion_in)  # in-sample accuracy
 #coef(log_default) %>% round(digits = 2)
 ```
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 phat_test_default1 = predict(log_default, default_test)
 yhat_test_default1 = ifelse(phat_test_default1 > 0.5, 1, 0)
 confusion_out = table(y = default_test$Default, yhat = yhat_test_default1)
@@ -325,11 +330,15 @@ sum(diag(confusion_out))/sum(confusion_out)  # out-of-sample accuracy
 ```
 The null model has a 70% accuracy rating when guessing that no individual defaulted on their loan. Thus, the approximate 1.4% absolute increase in model accuracy with the logisitic model is marginal.
 
+What do you notice about the history variable vis-a-vis predicting defaults? What do you think is going on here?
+It seems the history variable does a poor job of predicting defaults. I think this is becuase individuals categorized as having poor or terrible credit are less likely to apply for or recieve loans. 
 
+In light of what you see here, do you think this data set is appropriate for building a predictive model of defaults, if the purpose of the model is to screen prospective borrowers to classify them into "high" versus "low" probability of default? Why or why not---and if not, would you recommend any changes to the bank's sampling scheme?
+I do not think this data is appropriate for building a predictive model of defaults because the accuracy rating of a logistical regression that includes important characteristic variables (duration + amount + installment + age + history + purpose + foreign) only out performs the null model by approximately 1.4%. This could occur because of the small number of individuals who default on loans at the German bank in the dataset. I recommend that German Bank artificially place a certain portion of default individuals in their samples at all times. This will give a more accurate depiction of prediction when creating the next logistic model.
 
 ### Question 4
 
-```{r echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 # Load children and hotel reservations data
 library(nnet)
 hotels_dev = read_csv("/Users/josephherrera/Desktop/ECO395M/data/hotels_dev.csv")
@@ -337,7 +346,7 @@ hotels_dev = read_csv("/Users/josephherrera/Desktop/ECO395M/data/hotels_dev.csv"
 hotels_val = read_csv("/Users/josephherrera/Desktop/ECO395M/data/hotels_val.csv")
 ```
 
-```{r}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 #Model building
 
 #Create the initial split for hotels_dev
@@ -347,11 +356,11 @@ hotels_dev_test = testing(hotels_dev_split)
 
 log_baseline1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest, data = hotels_dev_train, family = "binomial")
 
-coef(log_baseline1) %>% round(3)
+#coef(log_baseline1) %>% round(3)
 
 #Add predictions and calculate the out-of-sample accuracy
 phat_baseline1 = predict(log_baseline1, hotels_dev_test)
-yhat_baseline1 = ifelse(phat_baseline1 > 0.1, 1, 0)
+yhat_baseline1 = ifelse(phat_baseline1 > 0.5, 1, 0)
 confusion_matrix_baseline1_out = table(y = hotels_dev_test$children, yhat = yhat_baseline1)
 
 confusion_matrix_baseline1_out #confusion matrix
@@ -360,7 +369,7 @@ sum(diag(confusion_matrix_baseline1_out))/sum(confusion_matrix_baseline1_out)#ou
 
 #0.9173241
 ```
-```{r}
+```{r message = FALSE, warning=FALSE, echo=FALSE}
 #Create baseline model 2 
 
 hotels_dev_split2 = initial_split(hotels_dev, prop = 0.8)
@@ -369,11 +378,11 @@ hotels_dev_test2 = testing(hotels_dev_split2)
 
 log_baseline2 = glm(children ~ . - arrival_date, family = "binomial", data = hotels_dev_train2)
 
-coef(log_baseline2) %>% round(3)
+#coef(log_baseline2) %>% round(3)
 
 #Add predictions and calculate the out-of-sample accuracy
 phat_baseline2 = predict(log_baseline2, hotels_dev_test2)
-yhat_baseline2 = ifelse(phat_baseline2 > 0.3, 1, 0)
+yhat_baseline2 = ifelse(phat_baseline2 > 0.5, 1, 0)
 confusion_matrix_baseline2_out = table(y = hotels_dev_test2$children, yhat = yhat_baseline2)
 
 confusion_matrix_baseline2_out #confusion matrix
@@ -383,25 +392,14 @@ sum(diag(confusion_matrix_baseline2_out))/sum(confusion_matrix_baseline2_out)#ou
 #0.9329926
 ```
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 #Create the best linear model possible 
-#Use the step-wise function
 hotels_dev_step_split = initial_split(hotels_dev, prop = 0.8)
 hotels_dev_step_train = training(hotels_dev_step_split)
 hotels_dev_step_test = testing(hotels_dev_step_split)
 
 #Create medium baseline model using baseline model 1
 lm_medium = lm(children ~ market_segment + adults + customer_type + is_repeated_guest, data = hotels_dev_step_train)
-
-#Implement forward selection
-#lm0 = lm(price ~ 1, data = hotels_dev_step)
-#lm_forward = step(lm0, direction = "forward",
-                  #scope = ~( hotelResort_Hotel + lead_time + stays_in_weekend_nights + stays_in_week_nights + adults + mealFB +  mealHB + mealSC + mealUndefined +  market_segmentComplementary + market_segmentCorporate +
-#market_segmentDirect + market_segmentGroups + market_segmentOffline_TA/TO + market_segmentOnline_TA +  distribution_channelDirect + distribution_channelGDS +  distribution_channelTA/TO + is_repeated_guest +  previous_cancellations + previous_bookings_not_canceled +   reserved_room_typeB + reserved_room_typeC + reserved_room_typeD + reserved_room_typeE + reserved_room_typeF +       reserved_room_typeG + reserved_room_typeH +   reserved_room_typeL + assigned_room_typeB +   assigned_room_typeC + assigned_room_typeD +   assigned_room_typeE + assigned_room_typeF +  assigned_room_typeG + assigned_room_typeH +
-#assigned_room_typeI + assigned_room_typeK + booking_changes +
-#deposit_typeNon_Refund + deposit_typeRefundable + days_in_waiting_list +  customer_typeGroup +  customer_typeTransient + customer_typeTransient-Party +
-#average_daily_rate +
-#required_car_parking_spacesparking +  total_of_special_requests )^2)
 
 #Find the best linear model
 library(gamlr) #For the Lasso regression
@@ -420,20 +418,20 @@ sccvl = cv.gamlr(scx, scy, nfold=20, family="binomial", verb=TRUE)
 plot(sccvl, bty="n")
 
 ## CV min deviance selection
-scb.min = coef(sccvl, select="min")
-log(sccvl$lambda.min)
-sum(scb.min!=0) # note: this is random!  because of the CV randomness
+#scb.min = coef(sccvl, select="min")
+#log(sccvl$lambda.min)
+#sum(scb.min!=0) # note: this is random!  because of the CV randomness
 
-scbeta = coef(sccvl) 
-scbeta
+#scbeta = coef(sccvl) 
+#scbeta
 
 
 
-lm0 = lm(children ~ hotel + adults + meal + market_segment + reserved_room_type + booking_changes + customer_type + average_daily_rate + required_car_parking_spaces + total_of_special_requests + arrival_date, data = hotels_dev_step_train)
+lm0 = lm(children ~ hotel + lead_time + adults + meal + distribution_channel + is_repeated_guest + market_segment + reserved_room_type + previous_bookings_not_canceled + booking_changes + customer_type + average_daily_rate  + total_of_special_requests + arrival_date, data = hotels_dev_step_train)
 
 #Find out-of-sample accuracy
 phat_step = predict(lm0, hotels_dev_step_test)
-yhat_step = ifelse(phat_step > 0.15, 1, 0)
+yhat_step = ifelse(phat_step > 0.5, 1, 0)
 confusion_matrix_step_out = table(y = hotels_dev_step_test$children, yhat = yhat_step)
 
 confusion_matrix_step_out #confusion matrix
@@ -446,7 +444,7 @@ sum(diag(confusion_matrix_step_out))/sum(confusion_matrix_step_out)#out-of-sampl
 Once you've built your best model and assessed its out-of-sample performance using hotels_dev, now turn to the data in hotels_val. Now you'll validate your model using this entirely fresh subset of the data, i.e. one that wasn't used to fit OR test as part of the model-building stage. (Using a separate "validation" set, completely apart from your training and testing set, is a generally accepted best practice in machine learning.)
 
 Produce an ROC curve for your best model, using the data in hotels_val: that is, plot TPR(t) versus FPR(t) as you vary the classification threshold t.
-```{r}
+```{r echo=FALSE , warning=FALSE, message=FALSE}
 #Model Validation Step 1
 
 #Create the train-test split
@@ -472,7 +470,7 @@ sum(diag(confusion_matrix_val_out))/sum(confusion_matrix_val_out)#out-of-sample 
 # 0.9029029
 
 ```
-```{r}
+```{r echo = FALSE, warning=FALSE, message=FALSE}
 #Create the ROC curve using the hotels_val data
 phat_val = predict(lm0, hotels_val_test, type = "response")
 
@@ -491,13 +489,15 @@ ggplot(data = roc_curve_val) +
   geom_line(aes(x=FPR, y=TPR, color = model)) + 
   labs(title="ROC curve: model of best accuracy") +
   theme_bw(base_size = 10) +
-  xlim(0,1) +
+  xlim(0,0.5) +
   ylim(0,1)
 ```
+Caption: The ROC curve depicts the true positive rate and false positive rate for values of threshold t. 
+
 
 Next, create 20 folds of hotels_val. There are 4,999 bookings in hotels_val, so each fold will have about 250 bookings in it -- roughly the number of bookings the hotel might have on a single busy weekend. 
 
-```{r}
+```{r eval=FALSE}
 #Model Validation Step 2
 
 #Create 20 folds for htoels_val
@@ -521,7 +521,34 @@ errs = map2_dbl(models, SaratogaHouses_folds$test, modelr::rmse)
 c(k=k, err = mean(errs), std_err = sd(errs)/sqrt(K_folds))
 } %>% as.data.frame
 
-lm1 = lm(children ~ hotel + adults + meal + market_segment + reserved_room_type + booking_changes + customer_type + average_daily_rate + required_car_parking_spaces + total_of_special_requests + arrival_date, data = hotels_val_folds$test)
+cv2_grid = foreach(k=nfolds, .combine='rbind') %do% {
+lm1 = lm(children ~ hotel + adults + meal + market_segment + reserved_room_type + booking_changes + customer_type + average_daily_rate + required_car_parking_spaces + total_of_special_requests + arrival_date, data = hotels_val_folds$test, check.rows = T)
+
+} %>% as.data.frame
+
+nfolds = 20
+hotels_val_folds = crossv_kfold(hotels_val, k=K_folds)
+models2 = map(hotel_val_folds$train, lm(children ~ hotel + adults + meal + market_segment + reserved_room_type + booking_changes + customer_type + average_daily_rate + required_car_parking_spaces + total_of_special_requests + arrival_date, data = ., use.all=FALSE))
+predval = map2_dbl(models2,hotels_val_folds$test, )
+
+
+
+# allocate to folds
+N = nrow(hotels_val)
+K = 20
+fold_id = rep_len(1:K, N)  # repeats 1:K over and over again
+fold_id = sample(fold_id, replace=FALSE) # permute the order randomly
+
+hotels_val_folds <- hotels_val %>%
+  mutate(fold_id = sample(fold_id, replace=FALSE))%>%
+  group_by(fold_id)%>%
+  summarize(prop_children = mean(children), count_children = sum(children))
+
+foreach(group = fold_id, .combine='rbind') %do%{
+  phat_val_test = predict(lm0 , hotels_val$fold_id, type='response')
+  yhat_val_test = ifelse(phat_val_test > 0.5, 1, 0)
+}
+
 
 ```
 
