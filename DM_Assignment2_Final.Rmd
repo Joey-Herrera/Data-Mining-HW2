@@ -474,6 +474,9 @@ sum(diag(confusion_matrix_val_out))/sum(confusion_matrix_val_out)#out-of-sample 
 
 ```
 After estimating the accuracy of the predicted logistic model on the hotels_val dataset, we see that the accuracy hovers below 90%.
+
+
+
 ```{r echo = FALSE, warning=FALSE, message=FALSE}
 #Create the ROC curve using the hotels_val data
 phat_val = predict(lm0, hotels_val, type = "response")
