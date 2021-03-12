@@ -99,9 +99,15 @@ The facted plots above illustrate that temperature does not have a noticable eff
 2A. Return to the data set on house prices in Saratoga, NY that we considered in class. Recall that a starter script here is in saratoga_lm.R. For this data set, you'll run a "horse race" (i.e. a model comparison exercise) between two model classes: linear models and KNN.
 
 Build the best linear model for price that you can. It should clearly outperform the "medium" model that we considered in class. Use any combination of transformations, engineering features, polynomial terms, and interactions that you want; and use any strategy for selecting the model that you want.
+
+Answer: The goal of this question is to compare an optimal KNN with an optimal linear model and the "medium" model we considered in class. I will compare the RMSE of each model to each other where the lower the RMSE the closer to the actual housing price the prediction is. To begin, I standardized my variables to account for the large variation in price. Next, I estimated twenty samples of the medium model and took the average of its RMSE as a measure to compare the KNN and optimal linear model with. The RMSE for the medium model can be found below.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 #Load Saratoga houses data
 data(SaratogaHouses)
+
+#Standardize the variables
+SaratogaHouses = SaratogaHouses %>%
+   mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
 
 #Linear models from class
 # Split into training and testing sets
@@ -114,7 +120,7 @@ saratoga_split_lm = initial_split(SaratogaHouses, prop = 0.8)
 saratoga_train_lm = training(saratoga_split_lm)
 saratoga_test_lm = testing(saratoga_split_lm)
 
-rmse_out_lm = foreach(i=1:10, .combine='rbind') %dopar% {
+rmse_out_lm = foreach(i=1:20, .combine='rbind') %dopar% {
 saratoga_split_lm = initial_split(SaratogaHouses, prop = 0.8)
 saratoga_train_lm = training(saratoga_split_lm)
 saratoga_test_lm = testing(saratoga_split_lm)
@@ -126,11 +132,9 @@ rmse_out_lm_mean = mean(rmse_out_lm)
 rmse_out_lm_mean
 
 ```
-
+Next, I hand created a linear model using trial and error to put the main effects that gave the model its lowest RMSE. Then, I added a few interactions with the living area variable to other variables that seem dependent on it such as, rooms, bathrooms, and fireplaces. Finally, I took twenty samples of my best linear model to get a standardize RMSE below, which narrowly beats the medium linear model above.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-#Standardize the variables
-SaratogaHouses = SaratogaHouses %>%
-   mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
+
 
 
 #Add additional variables to the best linear model (BLM)
@@ -147,7 +151,7 @@ saratoga_split_blm = initial_split(SaratogaHouses, prop = 0.8)
 saratoga_train_blm = training(saratoga_split_blm)
 saratoga_test_blm = testing(saratoga_split_blm)
 
-rmse_out_blm = foreach(i=1:10, .combine='rbind') %dopar% {
+rmse_out_blm = foreach(i=1:20, .combine='rbind') %dopar% {
 saratoga_split_blm = initial_split(SaratogaHouses, prop = 0.8)
 saratoga_train_blm = training(saratoga_split_blm)
 saratoga_test_blm = testing(saratoga_split_blm)
@@ -158,57 +162,48 @@ saratoga_test_blm = testing(saratoga_split_blm)
 
 rmse_out_blm_mean = mean(rmse_out_blm)
 rmse_out_blm_mean
-
-###### Test linear model
-SaratogaHouses = SaratogaHouses %>%
-  mutate(livingArea_rooms = livingArea*rooms,
-         livingArea_bathrooms = livingArea*bathrooms,
-         livingArea_fireplaces = livingArea*fireplaces)
-        # log_age = log(age)) #cannot use log_age because some observation have age = 0
- 
-
-test_model = lm(price ~ lotSize + landValue + age + livingArea + bedrooms + fireplaces + bathrooms + rooms + heating + fuel + centralAir + livingArea_rooms+ livingArea_bathrooms + livingArea_fireplaces, data = saratoga_train_blm)
-
-modelr::rmse(test_model, saratoga_test_blm)
- #RMSE first try 58693.66
 ```
 
 \newpage
 2B. Now build the best K-nearest-neighbor regression model for price that you can. Note: you still need to choose which features should go into a KNN model, but you don't explicitly include interactions or polynomial terms. The method is sufficiently adaptable to find interactions and nonlinearities, if they are there. But do make sure to standardize your variables before applying KNN, or at least do something that accounts for the large differences in scale across the different variables here.
 
 Which model seems to do better at achieving lower out-of-sample mean-squared error? Write a report on your findings as if you were describing your price-modeling strategies for a local taxing authority, who needs to form predicted market values for properties in order to know how much to tax them. Keep the main focus on the conclusions and model performance; any relevant technical details should be put in an appendix.
+
+Answer: To create the KNN model I used the kfold cross validation technique using twenty different folds of data and fourty different k values that start at two and increase by two until reaching eighty. 
 ```{r echo=FALSE,warning=FALSE, message=FALSE}
 #Create the best KNN model for price -> compare to lm from Saratoga lm
 #Standardize variables excepet Class
 SaratogaHouses_scale = SaratogaHouses #%>%
- #  mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
+  # mutate_at(c('price', 'lotSize', 'age', 'landValue', 'livingArea', 'pctCollege', 'bedrooms', 'bathrooms', 'fireplaces', 'rooms'), funs(c(scale(.))))
 
-SaratogaHouses_scale <- SaratogaHouses_scale[c(-17,-18,-19)] # drop interactions for this portion
+#SaratogaHouses_scale <- SaratogaHouses_scale[c(-17,-18,-19)] # drop interactions for this portion
 
 
 
-saratoga_split_scale = initial_split(SaratogaHouses_scale, prop = 0.8)
-saratoga_train_scale = training(saratoga_split_scale)
-saratoga_test_scale = testing(saratoga_split_scale)
+#saratoga_split_scale = initial_split(SaratogaHouses_scale, prop = 0.8)
+#saratoga_train_scale = training(saratoga_split_scale)
+#saratoga_test_scale = testing(saratoga_split_scale)
 
-rmse_out_scale = foreach(i=1:20, .combine='rbind') %dopar% {
-saratoga_split_scale = initial_split(SaratogaHouses_scale, prop = 0.8)
-saratoga_train_scale = training(saratoga_split_scale)
-saratoga_test_scale = testing(saratoga_split_scale)
+#rmse_out_scale = foreach(i=1:20, .combine='rbind') %dopar% {
+#saratoga_split_scale = initial_split(SaratogaHouses_scale, prop = 0.8)
+#saratoga_train_scale = training(saratoga_split_scale)
+#saratoga_test_scale = testing(saratoga_split_scale)
 
     # train the model and calculate RMSE on the test set
-    lm_model_scale = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=saratoga_train_scale)
-     this_rmse_scale = modelr::rmse(lm_model_scale, saratoga_test_scale)
-  }
+    #lm_model_scale = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=saratoga_train_scale)
+   #  this_rmse_scale = modelr::rmse(lm_model_scale, saratoga_test_scale)
+  #}
 
-rmse_out_scale_mean = mean(rmse_out_scale)
-rmse_out_scale_mean
+#rmse_out_scale_mean = mean(rmse_out_scale)
+#rmse_out_scale_mean
 #0.6775124		
 ```
 
-
+The KNN technique allowed me to choose the optimal value of K using the figure above. After using k=16 for my predication model I found that the KNN model significantly outperforms the standadized RMSEs for both the best linear model and the medium model. The standardized RMSE for the KNN model can be found below. 
 ```{r echo=FALSE, message = FALSE, warning=FALSE}
 #Use KNN cross validation for various samples
+SaratogaHouses_scale <- SaratogaHouses_scale[c(-17,-18,-19)] # drop interactions for this portion
+
 # K-fold cross validation
 K_folds = 20
 SaratogaHouses_folds = crossv_kfold(SaratogaHouses_scale, k=K_folds)
@@ -250,6 +245,8 @@ mutate(price_pred = predict(knn_best, SaratogaHouses_scale))
 
 
 ```
+In conclusion, as a local tax authority, I recommend using the KNN model to predict market values for properties in order to know how much to tax them.
+
 
 \newpage
 ### Question 3 
@@ -291,7 +288,7 @@ ggplot(history_bar) +
 Caption: The bar plot illustrates the probability of an individual defaulting on a loan based on their credit history. This is particularly interesting because individuals with good credit history are more likely to default on a loan than people from other credit history categories.
 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE }
 #Create logisitic regression with default as the outcome variable
 # Create the initial train and test splits
 default_split = initial_split(german_credit, prop = 0.8)
@@ -307,18 +304,14 @@ log_default <- glm(Default ~ duration + amount + installment + age + history + p
 phat_train_default1 = predict(log_default, default_train)
 yhat_train_default1 = ifelse(phat_train_default1 > 0.5, 1, 0)
 confusion_in = table(y = default_train$Default, yhat = yhat_train_default1)
-confusion_in
-sum(diag(confusion_in))/sum(confusion_in)  # in-sample accuracy
-
-# 0.7128589
-
-
+#confusion_in
+#sum(diag(confusion_in))/sum(confusion_in)  # in-sample accuracy
 
 #log_default <- glm(Default ~ duration + amount + installment + age + history + purpose + foreign, family = 'binomial', data = german_credit)
 
 #coef(log_default) %>% round(digits = 2)
 ```
-
+After predicting out-of-sample accuracy for the predictive logisitic model, you can see that there are very few observations where people default in the confusion matrix below. This leads to an out-of-sample accuracy that hovers around 70%.
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 phat_test_default1 = predict(log_default, default_test)
 yhat_test_default1 = ifelse(phat_test_default1 > 0.5, 1, 0)
@@ -334,7 +327,7 @@ What do you notice about the history variable vis-a-vis predicting defaults? Wha
 It seems the history variable does a poor job of predicting defaults. I think this is becuase individuals categorized as having poor or terrible credit are less likely to apply for or recieve loans. 
 
 In light of what you see here, do you think this data set is appropriate for building a predictive model of defaults, if the purpose of the model is to screen prospective borrowers to classify them into "high" versus "low" probability of default? Why or why not---and if not, would you recommend any changes to the bank's sampling scheme?
-I do not think this data is appropriate for building a predictive model of defaults because the accuracy rating of a logistical regression that includes important characteristic variables (duration + amount + installment + age + history + purpose + foreign) only out performs the null model by approximately 1.4%. This could occur because of the small number of individuals who default on loans at the German bank in the dataset. I recommend that German Bank artificially place a certain portion of default individuals in their samples at all times. This will give a more accurate depiction of prediction when creating the next logistic model.
+I do not think this data is appropriate for building a predictive model of defaults because the accuracy rating of a logistical regression that includes important characteristic variables (duration + amount + installment + age + history + purpose + foreign) only out performs the null model by approximately 1.4%. This could occur because of the small number of individuals who default on loans at the German bank in the dataset. I recommend that German Bank not oversample defaults from their data. 
 
 ### Question 4
 
@@ -345,8 +338,8 @@ hotels_dev = read_csv("/Users/josephherrera/Desktop/ECO395M/data/hotels_dev.csv"
 
 hotels_val = read_csv("/Users/josephherrera/Desktop/ECO395M/data/hotels_val.csv")
 ```
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+Model building: Below is the code, respective confusion matrices, and out-of-sample accuracy for the three different models.
+```{r echo=TRUE, warning=FALSE, message=FALSE}
 #Model building
 
 #Create the initial split for hotels_dev
@@ -369,7 +362,10 @@ sum(diag(confusion_matrix_baseline1_out))/sum(confusion_matrix_baseline1_out)#ou
 
 #0.9173241
 ```
-```{r message = FALSE, warning=FALSE, echo=FALSE}
+
+At a threshold of 0.5, the small model with few covariates does not predict that any booking will have kids.
+
+```{r message = FALSE, warning=FALSE, echo=TRUE}
 #Create baseline model 2 
 
 hotels_dev_split2 = initial_split(hotels_dev, prop = 0.8)
@@ -392,7 +388,10 @@ sum(diag(confusion_matrix_baseline2_out))/sum(confusion_matrix_baseline2_out)#ou
 #0.9329926
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+The large model's confusion matrix (found above) is effective at predicting booking that have children and has an out-of-sample accuracy that is continuously over 90%.
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
 #Create the best linear model possible 
 hotels_dev_step_split = initial_split(hotels_dev, prop = 0.8)
 hotels_dev_step_train = training(hotels_dev_step_split)
@@ -413,9 +412,9 @@ scx = model.matrix(children ~ .-1, data=hotels_val) # do -1 to drop intercept!
 scy = hotels_val$children
 
 # Cross validation lasso regression
-sccvl = cv.gamlr(scx, scy, nfold=20, family="binomial", verb=TRUE)
+sccvl = cv.gamlr(scx, scy, nfold=20, family="binomial", verb=F)
 
-plot(sccvl, bty="n")
+#plot(sccvl, bty="n")
 
 ## CV min deviance selection
 #scb.min = coef(sccvl, select="min")
@@ -441,16 +440,20 @@ sum(diag(confusion_matrix_step_out))/sum(confusion_matrix_step_out)#out-of-sampl
 # 0.9175464
 ```
 
+To create the best linear model, I used a lasso regression with cross validation to find the which parameters should be in the linear model. The out-of-sample accuracy for this model consistently outperforms the second baseline model by half a percentage point.
+
+\newpage
+Model Validation Step 1:
 Once you've built your best model and assessed its out-of-sample performance using hotels_dev, now turn to the data in hotels_val. Now you'll validate your model using this entirely fresh subset of the data, i.e. one that wasn't used to fit OR test as part of the model-building stage. (Using a separate "validation" set, completely apart from your training and testing set, is a generally accepted best practice in machine learning.)
 
 Produce an ROC curve for your best model, using the data in hotels_val: that is, plot TPR(t) versus FPR(t) as you vary the classification threshold t.
-```{r echo=FALSE , warning=FALSE, message=FALSE}
+```{r echo=TRUE , warning=FALSE, message=FALSE}
 #Model Validation Step 1
 
 #Create the train-test split
-hotels_val_split = initial_split(hotels_val, prop=0.8)
-hotels_val_train = training(hotels_val_split)
-hotels_val_test = testing(hotels_val_split)
+#hotels_val_split = initial_split(hotels_val, prop=0.8)
+#otels_val_train = training(hotels_val_split)
+#hotels_val_test = testing(hotels_val_split)
 
 #Fit the model with the training data
 #lm_val = lm(children ~ market_segment + adults + customer_type + is_repeated_guest + 
@@ -459,9 +462,9 @@ hotels_val_test = testing(hotels_val_split)
 #coef(lm_val) %>% round(3)
 
 #Add predictions and calculate the out-of-sample accuracy
-phat_val = predict(lm0, hotels_val_test)
+phat_val = predict(lm0, hotels_val)
 yhat_val = ifelse(phat_val > 0.15, 1, 0)
-confusion_matrix_val_out = table(y = hotels_val_test$children, yhat = yhat_val)
+confusion_matrix_val_out = table(y = hotels_val$children, yhat = yhat_val)
 
 confusion_matrix_val_out #confusion matrix
 
@@ -470,19 +473,20 @@ sum(diag(confusion_matrix_val_out))/sum(confusion_matrix_val_out)#out-of-sample 
 # 0.9029029
 
 ```
+After estimating the accuracy of the predicted logistic model on the hotels_val dataset, we see that the accuracy hovers below 90%.
 ```{r echo = FALSE, warning=FALSE, message=FALSE}
 #Create the ROC curve using the hotels_val data
-phat_val = predict(lm0, hotels_val_test, type = "response")
+phat_val = predict(lm0, hotels_val, type = "response")
 
 thresh_grid = seq(0.15, 0.05, by=-0.001)
 roc_curve_val = foreach(thresh = thresh_grid, .combine='rbind') %do% {
  yhat_val = ifelse(phat_val > thresh, 1, 0)
 
   # FPR, TPR for linear model
- confusion_matrix_val_out = table(y = hotels_val_test$children, yhat = yhat_val)
+ confusion_matrix_val_out = table(y = hotels_val$children, yhat = yhat_val)
   out_lin = data.frame(model = "linear",
-                       TPR = confusion_matrix_val_out[2,2]/sum(hotels_val_test$children==1),
-                       FPR = confusion_matrix_val_out[1,2]/sum(hotels_val_test$children==0))
+                       TPR = confusion_matrix_val_out[2,2]/sum(hotels_val$children==1),
+                       FPR = confusion_matrix_val_out[1,2]/sum(hotels_val$children==0))
   rbind(out_lin)
 } %>% as.data.frame()
 ggplot(data = roc_curve_val) + 
@@ -492,66 +496,37 @@ ggplot(data = roc_curve_val) +
   xlim(0,0.5) +
   ylim(0,1)
 ```
+
 Caption: The ROC curve depicts the true positive rate and false positive rate for values of threshold t. 
 
-
+\newpage
+Model Validation Step 2:
 Next, create 20 folds of hotels_val. There are 4,999 bookings in hotels_val, so each fold will have about 250 bookings in it -- roughly the number of bookings the hotel might have on a single busy weekend. 
 
-```{r eval=FALSE}
+```{r echo=FALSE}
 #Model Validation Step 2
-
-#Create 20 folds for htoels_val
-flds <- createFolds(scy, k = 20, list = TRUE, returnTrain = FALSE)
-names(flds)[1] <- "train"
-
-#Sum predicted probabilities for all bookings in the fold. 
-
-nfolds = 20
-hotels_val_folds = crossv_kfold(hotels_val, k=K_folds)
-# create a grid of K values -- the precise grid isn't important as long
-# as you cover a wide range
-k_grid = seq(2, 80, by=2)
-
-# For each value of k, map the model-fitting function over the folds
-# Using the same folds is important, otherwise we're not comparing
-# models across the same train/test splits
-cv_grid = foreach(k = k_grid, .combine='rbind') %do% {
-models = map(SaratogaHouses_folds$train, ~ knnreg(price ~ lotSize + age + landValue + livingArea + pctCollege + bedrooms + bathrooms + fireplaces + rooms + heating + fuel + centralAir + sewer + waterfront, k=k, data = ., use.all=FALSE))
-errs = map2_dbl(models, SaratogaHouses_folds$test, modelr::rmse)
-c(k=k, err = mean(errs), std_err = sd(errs)/sqrt(K_folds))
-} %>% as.data.frame
-
-cv2_grid = foreach(k=nfolds, .combine='rbind') %do% {
-lm1 = lm(children ~ hotel + adults + meal + market_segment + reserved_room_type + booking_changes + customer_type + average_daily_rate + required_car_parking_spaces + total_of_special_requests + arrival_date, data = hotels_val_folds$test, check.rows = T)
-
-} %>% as.data.frame
-
-nfolds = 20
-hotels_val_folds = crossv_kfold(hotels_val, k=K_folds)
-models2 = map(hotel_val_folds$train, lm(children ~ hotel + adults + meal + market_segment + reserved_room_type + booking_changes + customer_type + average_daily_rate + required_car_parking_spaces + total_of_special_requests + arrival_date, data = ., use.all=FALSE))
-predval = map2_dbl(models2,hotels_val_folds$test, )
-
-
-
+library(foreach)
 # allocate to folds
 N = nrow(hotels_val)
 K = 20
 fold_id = rep_len(1:K, N)  # repeats 1:K over and over again
 fold_id = sample(fold_id, replace=FALSE) # permute the order randomly
 
+base3hand_val = lm(children~ hotel+lead_time+adults+meal+market_segment+distribution_channel+is_repeated_guest+
+                     previous_bookings_not_canceled+reserved_room_type+booking_changes+customer_type+average_daily_rate+
+                     total_of_special_requests+arrival_date, data = hotels_val)
+
 hotels_val_folds <- hotels_val %>%
-  mutate(fold_id = sample(fold_id, replace=FALSE))%>%
+  mutate(fold_id = sample(fold_id, replace=FALSE), phat_val_test = predict(base3hand_val, hotels_val, type='response'), yhat_val_test = ifelse(phat_val_test > 0.5, 1, 0)) #%>%
+
+fold_groups <- hotels_val_folds%>%
   group_by(fold_id)%>%
-  summarize(prop_children = mean(children), count_children = sum(children))
+  summarize(prop_children = mean(children), prop_pred = mean(phat_val_test), count_children = sum(children), count_pred = sum(yhat_val_test) )
 
-foreach(group = fold_id, .combine='rbind') %do%{
-  phat_val_test = predict(lm0 , hotels_val$fold_id, type='response')
-  yhat_val_test = ifelse(phat_val_test > 0.5, 1, 0)
-}
-
+fold_groups
 
 ```
-
+The table above indicates that this model is inconsistent at predicting the the total number of bookings in a group of 250 bookings. Since the number of bookings with children are small, over or under predicting by ten children could misinform hotel management on how many chicken nuggets they should purchase in the given timeframe.
 
 
 
